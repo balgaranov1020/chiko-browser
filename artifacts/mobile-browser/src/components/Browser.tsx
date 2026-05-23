@@ -61,7 +61,13 @@ function Browser() {
 
   return (
     <div className="flex flex-col h-[100dvh] w-full bg-background text-foreground overflow-hidden">
-      <div className="flex items-center gap-2 p-2 bg-muted/30 border-b border-border shadow-sm">
+      <div className="flex items-center gap-2 px-2 py-2 bg-muted/30 border-b border-border shadow-sm">
+        <div className="flex items-center gap-1.5 shrink-0 mr-1" data-testid="logo-chiko">
+          <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-sm">
+            <span className="text-white font-bold text-sm leading-none" style={{ fontFamily: "Georgia, serif" }}>C</span>
+          </div>
+          <span className="text-sm font-semibold text-foreground tracking-tight hidden sm:block">Chiko</span>
+        </div>
         <Button
           variant="ghost"
           size="icon"

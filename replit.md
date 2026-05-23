@@ -1,6 +1,6 @@
-# [Project name]
+# Chiko Browser
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A clean, modern mobile web browser app with address bar, back/forward/refresh navigation, and an embedded iframe viewport.
 
 ## Run & Operate
 
