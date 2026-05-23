@@ -1,0 +1,125 @@
+name: Build Chiko Browser (Android AAB)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'artifacts/mobile-browser/**'
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Version name (e.g. 1.0.1)'
+        required: false
+        default: '1.0'
+      version_code:
+        description: 'Version code (integer, increment each release)'
+        required: false
+        default: '1'
+
+jobs:
+  build:
+    name: Build signed AAB
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── Checkout ────────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Node.js + pnpm ──────────────────────────────────────────────────────
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ── Build web assets ─────────────────────────────────────────────────────
+      - name: Build web assets for Android
+        working-directory: artifacts/mobile-browser
+        run: pnpm vite build --config vite.android.config.ts
+
+      - name: Sync Capacitor
+        working-directory: artifacts/mobile-browser
+        run: npx cap sync android
+
+      # ── Java ─────────────────────────────────────────────────────────────────
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      # ── Signing keystore ─────────────────────────────────────────────────────
+      - name: Decode keystore from secret
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > $RUNNER_TEMP/chiko-release.keystore
+
+      # ── Bump version (optional, from workflow_dispatch inputs) ───────────────
+      - name: Set version in build.gradle
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: artifacts/mobile-browser/android/app
+        run: |
+          sed -i "s/versionCode [0-9]*/versionCode ${{ github.event.inputs.version_code }}/" build.gradle
+          sed -i "s/versionName \"[^\"]*\"/versionName \"${{ github.event.inputs.version_name }}\"/" build.gradle
+
+      # ── Gradle build ─────────────────────────────────────────────────────────
+      - name: Grant execute permission for gradlew
+        working-directory: artifacts/mobile-browser/android
+        run: chmod +x gradlew
+
+      - name: Build signed Release AAB
+        working-directory: artifacts/mobile-browser/android
+        env:
+          KEYSTORE_PATH: ${{ runner.temp }}/chiko-release.keystore
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          ./gradlew bundleRelease \
+            -Pandroid.injected.signing.store.file="$KEYSTORE_PATH" \
+            -Pandroid.injected.signing.store.password="$STORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
+
+      # ── Also build a debug APK for quick testing ─────────────────────────────
+      - name: Build debug APK
+        working-directory: artifacts/mobile-browser/android
+        run: ./gradlew assembleDebug
+
+      # ── Upload artifacts ─────────────────────────────────────────────────────
+      - name: Upload signed AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: chiko-browser-release-aab
+          path: artifacts/mobile-browser/android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 30
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: chiko-browser-debug-apk
+          path: artifacts/mobile-browser/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
+
+      # ── Summary ──────────────────────────────────────────────────────────────
+      - name: Build summary
+        run: |
+          echo "## Chiko Browser Build Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| File | Path |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Signed AAB | \`app/build/outputs/bundle/release/app-release.aab\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Debug APK  | \`app/build/outputs/apk/debug/app-debug.apk\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Download the artifacts from the **Artifacts** section above." >> $GITHUB_STEP_SUMMARY
+          AAB_SIZE=$(du -sh artifacts/mobile-browser/android/app/build/outputs/bundle/release/app-release.aab 2>/dev/null | cut -f1 || echo "N/A")
+          echo "**AAB size:** $AAB_SIZE" >> $GITHUB_STEP_SUMMARY

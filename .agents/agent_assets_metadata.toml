@@ -6,3 +6,15 @@ id = "ot6NwLKsys9mx3bd92caI"
 uri = "file://artifacts/mobile-browser/BUILD_ANDROID.md"
 type = "text"
 title = "Chiko Browser — Android Build Guide"
+
+[[outputs]]
+id = "ImmbJbwvgsxJs9cqIkMyO"
+uri = "file://.github/workflows/build-android.yml"
+type = "unspecified"
+title = "GitHub Actions Workflow — build-android.yml"
+
+[[outputs]]
+id = "juxdTRqs_aaUriMdocbgH"
+uri = "file://artifacts/mobile-browser/GITHUB_SECRETS_SETUP.md"
+type = "text"
+title = "GitHub Secrets Setup Guide"
