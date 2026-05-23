@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "ot6NwLKsys9mx3bd92caI"
+uri = "file://artifacts/mobile-browser/BUILD_ANDROID.md"
+type = "text"
+title = "Chiko Browser — Android Build Guide"
