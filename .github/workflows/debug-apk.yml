@@ -3,9 +3,11 @@ name: Debug APK (no signing required)
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
       - 'artifacts/mobile-browser/**'
+      - '.github/workflows/debug-apk.yml'
 
 jobs:
   build-debug:
@@ -30,7 +32,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build web assets
+      - name: Build web assets for Android
         working-directory: artifacts/mobile-browser
         run: pnpm vite build --config vite.android.config.ts
 
@@ -64,14 +66,11 @@ jobs:
         run: |
           APK=artifacts/mobile-browser/android/app/build/outputs/apk/debug/app-debug.apk
           SIZE=$(du -sh "$APK" 2>/dev/null | cut -f1 || echo "unknown")
-          echo "## Chiko Browser — Debug APK" >> $GITHUB_STEP_SUMMARY
+          echo "## Chiko Browser - Debug APK" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Size:** $SIZE" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### How to install" >> $GITHUB_STEP_SUMMARY
-          echo "1. Download the artifact \`chiko-browser-debug-${{ github.run_number }}\` below" >> $GITHUB_STEP_SUMMARY
-          echo "2. Unzip it — you'll find \`app-debug.apk\`" >> $GITHUB_STEP_SUMMARY
-          echo "3. **Via USB:** \`adb install app-debug.apk\`" >> $GITHUB_STEP_SUMMARY
-          echo "4. **Directly on phone:** transfer the APK, open it, allow 'Install unknown apps' in settings" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "> Debug APKs are signed automatically by Gradle — no keystore needed." >> $GITHUB_STEP_SUMMARY
+          echo "### Install instructions" >> $GITHUB_STEP_SUMMARY
+          echo "1. Download the artifact below and unzip it" >> $GITHUB_STEP_SUMMARY
+          echo "2. Via USB: adb install app-debug.apk" >> $GITHUB_STEP_SUMMARY
+          echo "3. On phone: transfer the APK, enable 'Install unknown apps', tap to install" >> $GITHUB_STEP_SUMMARY
